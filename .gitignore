@@ -1,0 +1,14 @@
+# Claude Code settings
+.claude/
+
+# IDE
+.idea/
+
+# Build output
+build/
+.gradle/
+
+# Personal transaction data
+*.csv
+*.xlsx
+*.xls

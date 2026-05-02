@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    display_name VARCHAR(100),
+    enabled TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    txn_date DATE NOT NULL,
+    description VARCHAR(255),
+    category VARCHAR(100) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    currency CHAR(3) NOT NULL DEFAULT 'KRW',
+    source_file VARCHAR(255),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_txn_user_date (user_id, txn_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS stocks (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    symbol VARCHAR(20) NOT NULL,
+    company_name VARCHAR(255),
+    quantity DECIMAL(15,6) NOT NULL,
+    avg_cost DECIMAL(15,4) NOT NULL,
+    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_symbol (user_id, symbol),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS stock_price_cache (
+    symbol VARCHAR(20) NOT NULL,
+    current_price DECIMAL(15,4) NOT NULL,
+    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (symbol)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS ai_reports (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    report_text LONGTEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.assetflow.mapper.StockPriceCacheMapper">
+
+    <select id="findBySymbol" resultType="StockPriceCache">
+        SELECT symbol, current_price, currency, fetched_at
+        FROM stock_price_cache
+        WHERE symbol = #{symbol}
+    </select>
+
+    <insert id="upsert" parameterType="StockPriceCache">
+        INSERT INTO stock_price_cache (symbol, current_price, currency, fetched_at)
+        VALUES (#{symbol}, #{currentPrice}, #{currency}, NOW())
+        ON DUPLICATE KEY UPDATE
+            current_price = #{currentPrice},
+            currency = #{currency},
+            fetched_at = NOW()
+    </insert>
+
+    <delete id="deleteAll">
+        DELETE FROM stock_price_cache
+    </delete>
+
+</mapper>

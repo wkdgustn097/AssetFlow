@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.assetflow.mapper.TransactionMapper">
+
+    <insert id="insert" parameterType="Transaction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO transactions (user_id, txn_date, description, category, amount, currency, source_file)
+        VALUES (#{userId}, #{txnDate}, #{description}, #{category}, #{amount}, #{currency}, #{sourceFile})
+    </insert>
+
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO transactions (user_id, txn_date, description, category, amount, currency, source_file)
+        VALUES
+        <foreach collection="list" item="t" separator=",">
+            (#{t.userId}, #{t.txnDate}, #{t.description}, #{t.category}, #{t.amount}, #{t.currency}, #{t.sourceFile})
+        </foreach>
+    </insert>
+
+    <select id="findByUserId" resultType="Transaction">
+        SELECT id, user_id, txn_date, description, category, amount, currency, source_file, created_at
+        FROM transactions
+        WHERE user_id = #{userId}
+        ORDER BY txn_date DESC, id DESC
+    </select>
+
+    <select id="findByUserIdAndYearMonth" resultType="Transaction">
+        SELECT id, user_id, txn_date, description, category, amount, currency, source_file, created_at
+        FROM transactions
+        WHERE user_id = #{userId}
+          AND DATE_FORMAT(txn_date, '%Y-%m') = #{yearMonth}
+        ORDER BY txn_date DESC, id DESC
+    </select>
+
+    <select id="findCategorySummary" resultType="CategorySummaryDto">
+        SELECT category, SUM(amount) AS total_amount
+        FROM transactions
+        WHERE user_id = #{userId}
+          AND DATE_FORMAT(txn_date, '%Y-%m') = #{yearMonth}
+        GROUP BY category
+        ORDER BY total_amount DESC
+    </select>
+
+    <select id="findMonthlyTrend" resultType="MonthlyTrendDto">
+        SELECT DATE_FORMAT(txn_date, '%Y-%m') AS month, SUM(amount) AS total_amount
+        FROM transactions
+        WHERE user_id = #{userId}
+          AND txn_date >= DATE_SUB(CURDATE(), INTERVAL #{months} MONTH)
+        GROUP BY DATE_FORMAT(txn_date, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+
+    <select id="findMonthlyTotal" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM transactions
+        WHERE user_id = #{userId}
+          AND DATE_FORMAT(txn_date, '%Y-%m') = #{yearMonth}
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM transactions WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM transactions WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+</mapper>

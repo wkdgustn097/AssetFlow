@@ -82,7 +82,7 @@
               <td style="color:#64748b; font-size:13px;">${t.txnDate}</td>
               <td>${t.description}</td>
               <td><span class="badge badge-blue">${t.category}</span></td>
-              <td class="text-right" style="font-weight:600;">
+              <td class="text-right" style="font-weight:600; color:${t.amount >= 0 ? '#6366f1' : '#94a3b8'};">
                 <fmt:formatNumber value="${t.amount}" pattern="#,###" />원
               </td>
               <td class="text-right">

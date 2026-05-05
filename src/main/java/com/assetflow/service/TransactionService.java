@@ -42,6 +42,14 @@ public class TransactionService {
         return transactionMapper.countByUserId(userId);
     }
 
+    public long getTransactionCountByYearMonth(Long userId, String yearMonth) {
+        return transactionMapper.countByUserIdAndYearMonth(userId, yearMonth);
+    }
+
+    public long getTransactionCountByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
+        return transactionMapper.countByUserIdAndDateRange(userId, startDate, endDate);
+    }
+
     public String getCurrentYearMonth() {
         return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
     }

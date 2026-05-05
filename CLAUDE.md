@@ -64,18 +64,22 @@ Spring Boot application using Java 17. Main package: `com.assetflow`.
 
 ### 2단계 — Codex 검토 (gpt-5.5)
 - Claude가 정리한 접근법을 Codex에게 검토시킨다.
-- 명령 형식:
-  ```bash
-  codex -m gpt-5.5 review <대상 파일 또는 --stdin으로 코드 전달>
+- **실행 전 사용자에게 아래 형식으로 명령을 보여준다:**
   ```
-- Codex의 피드백을 반영해 구현 계획을 확정한다.
+  [Codex 검토 명령]
+  codex -m gpt-5.5 review <파일 경로>
+  ```
+- Codex의 피드백을 요약해 사용자에게 공유한 뒤 구현 계획을 확정한다.
 
-### 3단계 — Codex 코딩 (o3-mini → 사용자 지정 시 변경)
-- 확정된 계획을 Codex에게 코딩 지시한다.
-- 명령 형식:
-  ```bash
-  codex -m codex-mini-latest --dangerously-bypass-approvals-and-sandbox exec "<상세 구현 지시>"
+### 3단계 — Codex 코딩
+- **실행 전 사용자에게 아래 형식으로 명령 전체를 보여준다:**
   ```
+  [Codex 코딩 명령]
+  codex -m codex-mini-latest --dangerously-bypass-approvals-and-sandbox exec "
+  <전달할 구현 지시 전문>
+  "
+  ```
+- 사용자가 확인한 뒤 실행한다 (또는 사용자가 자동 실행을 허용한 경우 바로 실행).
 - 구현 후 반드시 `./gradlew compileJava`로 컴파일 성공 확인.
 - 실패 시 에러를 분석해 수정한다.
 

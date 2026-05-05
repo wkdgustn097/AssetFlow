@@ -20,6 +20,8 @@ public interface TransactionMapper {
     List<MonthlyTrendDto> findMonthlyTrend(@Param("userId") Long userId, @Param("months") int months);
     BigDecimal findMonthlyTotal(@Param("userId") Long userId, @Param("yearMonth") String yearMonth);
     long countByUserId(@Param("userId") Long userId);
+    long countByUserIdAndYearMonth(@Param("userId") Long userId, @Param("yearMonth") String yearMonth);
+    long countByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     void deleteById(@Param("id") Long id, @Param("userId") Long userId);
     List<CategorySummaryDto> findCategorySummaryByDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     BigDecimal findMonthlyTotalByDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);

@@ -62,11 +62,39 @@
     </c:if>
   </div>
   <div class="card">
-    <div class="card-title">월별 지출 추이 (최근 6개월)</div>
-    <canvas id="trendChart" height="260"></canvas>
-    <c:if test="${empty summary.monthlyTrend}">
-      <p style="text-align:center; color:#94a3b8; padding:40px 0; font-size:14px;">데이터가 없습니다.</p>
-    </c:if>
+    <div class="card-title">보유 주식 수익률</div>
+    <c:choose>
+      <c:when test="${empty portfolio}">
+        <p style="text-align:center; color:#94a3b8; padding:40px 0; font-size:14px;">등록된 주식이 없습니다.</p>
+      </c:when>
+      <c:otherwise>
+        <table>
+          <thead>
+            <tr>
+              <th>심볼</th>
+              <th>회사명</th>
+              <th class="text-right">수익률</th>
+            </tr>
+          </thead>
+          <tbody>
+            <c:forEach items="${portfolio}" var="s">
+              <tr>
+                <td style="font-weight:600;">${s.symbol}</td>
+                <td style="color:#64748b; font-size:13px;">${s.companyName}</td>
+                <td class="text-right" style="font-weight:600; color:${s.pnlPercent >= 0 ? '#10b981' : '#ef4444'};">
+                  <c:if test="${s.priceAvailable}">
+                    ${s.pnlPercent >= 0 ? '+' : ''}${s.pnlPercent}%
+                  </c:if>
+                  <c:if test="${!s.priceAvailable}">
+                    <span style="color:#94a3b8; font-weight:400;">-</span>
+                  </c:if>
+                </td>
+              </tr>
+            </c:forEach>
+          </tbody>
+        </table>
+      </c:otherwise>
+    </c:choose>
   </div>
 </div>
 

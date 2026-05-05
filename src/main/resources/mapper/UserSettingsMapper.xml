@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.assetflow.mapper.UserSettingsMapper">
+
+    <select id="findByUserId" resultType="UserSettings">
+        SELECT user_id, payday FROM user_settings WHERE user_id = #{userId}
+    </select>
+
+    <insert id="upsert" parameterType="UserSettings">
+        INSERT INTO user_settings (user_id, payday)
+        VALUES (#{userId}, #{payday})
+        ON DUPLICATE KEY UPDATE payday = #{payday}
+    </insert>
+
+</mapper>

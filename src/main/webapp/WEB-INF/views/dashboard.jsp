@@ -33,17 +33,17 @@
 <!-- 요약 카드 -->
 <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px;">
   <div class="card" style="margin-bottom:0;">
-    <div style="font-size:13px; color:#64748b; font-weight:500; margin-bottom:8px;">이번 달 지출</div>
+    <div style="font-size:13px; color:#64748b; font-weight:500; margin-bottom:8px;">${periodLabel} 지출</div>
     <div style="font-size:26px; font-weight:700; color:#0f172a;">
       <fmt:formatNumber value="${summary.monthlyTotal}" pattern="#,###" />
       <span style="font-size:14px; color:#64748b;">원</span>
     </div>
-    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${yearMonth}</div>
+    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${periodLabel}</div>
   </div>
   <div class="card" style="margin-bottom:0;">
     <div style="font-size:13px; color:#64748b; font-weight:500; margin-bottom:8px;">최다 지출 카테고리</div>
     <div style="font-size:22px; font-weight:700; color:#6366f1;">${summary.topCategory}</div>
-    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">이번 달 기준</div>
+    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${periodLabel} 기준</div>
   </div>
   <div class="card" style="margin-bottom:0;">
     <div style="font-size:13px; color:#64748b; font-weight:500; margin-bottom:8px;">총 거래 건수</div>

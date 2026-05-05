@@ -49,4 +49,12 @@ public class TransactionService {
     public void deleteTransaction(Long id, Long userId) {
         transactionMapper.deleteById(id, userId);
     }
+
+    public List<CategorySummaryDto> getCategorySummaryByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
+        return transactionMapper.findCategorySummaryByDateRange(userId, startDate, endDate);
+    }
+
+    public BigDecimal getMonthlyTotalByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
+        return transactionMapper.findMonthlyTotalByDateRange(userId, startDate, endDate);
+    }
 }

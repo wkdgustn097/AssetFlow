@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
@@ -20,4 +21,6 @@ public interface TransactionMapper {
     BigDecimal findMonthlyTotal(@Param("userId") Long userId, @Param("yearMonth") String yearMonth);
     long countByUserId(@Param("userId") Long userId);
     void deleteById(@Param("id") Long id, @Param("userId") Long userId);
+    List<CategorySummaryDto> findCategorySummaryByDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    BigDecimal findMonthlyTotalByDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

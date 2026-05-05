@@ -38,7 +38,12 @@
       <fmt:formatNumber value="${summary.monthlyTotal}" pattern="#,###" />
       <span style="font-size:14px; color:#64748b;">원</span>
     </div>
-    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${periodLabel}</div>
+    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">
+      ${periodLabel}
+      <c:if test="${not empty deltaLabel}">
+        <span style="margin-left:6px; font-weight:600; color:${deltaLabel.startsWith('+') ? '#10b981' : '#ef4444'};">${deltaLabel} 전월比</span>
+      </c:if>
+    </div>
   </div>
   <div class="card" style="margin-bottom:0;">
     <div style="font-size:13px; color:#64748b; font-weight:500; margin-bottom:8px;">최다 지출 카테고리</div>
@@ -62,43 +67,89 @@
     </c:if>
   </div>
   <div class="card">
-    <div class="card-title">보유 주식 수익률</div>
-    <c:choose>
-      <c:when test="${empty portfolio}">
-        <p style="text-align:center; color:#94a3b8; padding:40px 0; font-size:14px;">등록된 주식이 없습니다.</p>
-      </c:when>
-      <c:otherwise>
-        <table>
-          <thead>
-            <tr>
-              <th>심볼</th>
-              <th>회사명</th>
-              <th class="text-right">수익률</th>
-            </tr>
-          </thead>
-          <tbody>
-            <c:forEach items="${portfolio}" var="s">
-              <tr>
-                <td style="font-weight:600;">${s.symbol}</td>
-                <td style="color:#64748b; font-size:13px;">${s.companyName}</td>
-                <td class="text-right" style="font-weight:600; color:${s.pnlPercent >= 0 ? '#10b981' : '#ef4444'};">
-                  <c:if test="${s.priceAvailable}">
-                    ${s.pnlPercent >= 0 ? '+' : ''}${s.pnlPercent}%
-                  </c:if>
-                  <c:if test="${!s.priceAvailable}">
-                    <span style="color:#94a3b8; font-weight:400;">-</span>
-                  </c:if>
-                </td>
-              </tr>
-            </c:forEach>
-          </tbody>
-        </table>
-      </c:otherwise>
-    </c:choose>
+    <!-- 탭 헤더 -->
+    <div style="display:flex; gap:0; margin-bottom:16px; border-bottom:1px solid #e2e8f0;">
+      <button id="tab-stock" onclick="switchTab('stock')"
+        style="padding:8px 16px; font-size:13px; font-weight:600; border:none; background:none; cursor:pointer; color:#6366f1; border-bottom:2px solid #6366f1;">
+        보유 주식
+      </button>
+      <button id="tab-trend" onclick="switchTab('trend')"
+        style="padding:8px 16px; font-size:13px; font-weight:600; border:none; background:none; cursor:pointer; color:#94a3b8; border-bottom:2px solid transparent;">
+        월별 추이
+      </button>
+    </div>
+
+    <!-- 주식 탭 -->
+    <div id="panel-stock">
+      <c:choose>
+        <c:when test="${empty portfolio}">
+          <p style="text-align:center; color:#94a3b8; padding:40px 0; font-size:14px;">등록된 주식이 없습니다.</p>
+        </c:when>
+        <c:otherwise>
+          <table>
+            <thead>
+              <tr><th>심볼</th><th>회사명</th><th class="text-right">수익률</th></tr>
+            </thead>
+            <tbody>
+              <c:forEach items="${portfolio}" var="s">
+                <tr>
+                  <td style="font-weight:600;">${s.symbol}</td>
+                  <td style="color:#64748b; font-size:13px;">${s.companyName}</td>
+                  <td class="text-right" style="font-weight:600; color:${s.pnlPercent >= 0 ? '#10b981' : '#ef4444'};">
+                    <c:if test="${s.priceAvailable}">${s.pnlPercent >= 0 ? '+' : ''}${s.pnlPercent}%</c:if>
+                    <c:if test="${!s.priceAvailable}"><span style="color:#94a3b8; font-weight:400;">-</span></c:if>
+                  </td>
+                </tr>
+              </c:forEach>
+            </tbody>
+          </table>
+        </c:otherwise>
+      </c:choose>
+    </div>
+
+    <!-- 월별 추이 탭 -->
+    <div id="panel-trend" style="display:none;">
+      <c:if test="${empty summary.monthlyTrend}">
+        <p style="text-align:center; color:#94a3b8; padding:40px 0; font-size:14px;">데이터가 없습니다.</p>
+      </c:if>
+      <canvas id="trendChart" height="220"></canvas>
+    </div>
   </div>
 </div>
 
+<!-- 예산 사용률 (예산 설정된 경우만) -->
+<c:if test="${not empty budgetUsages}">
+<div class="card">
+  <div class="card-title">예산 사용률</div>
+  <c:forEach items="${budgetUsages}" var="b">
+    <div style="margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+        <span style="font-weight:500;">${b.category}</span>
+        <span style="color:${b.overBudget ? '#ef4444' : '#64748b'};">
+          <fmt:formatNumber value="${b.spent}" pattern="#,###" />원
+          / <fmt:formatNumber value="${b.limit}" pattern="#,###" />원
+          (${b.usagePercent}%)
+        </span>
+      </div>
+      <div style="background:#f1f5f9; border-radius:4px; height:8px; overflow:hidden;">
+        <div style="width:${b.usagePercent}%; height:100%; background:${b.overBudget ? '#ef4444' : b.usagePercent >= 80 ? '#f59e0b' : '#10b981'}; border-radius:4px; transition:width 0.3s;"></div>
+      </div>
+    </div>
+  </c:forEach>
+</div>
+</c:if>
+
 <script>
+  function switchTab(tab) {
+    document.getElementById('panel-stock').style.display = tab === 'stock' ? '' : 'none';
+    document.getElementById('panel-trend').style.display = tab === 'trend' ? '' : 'none';
+    document.getElementById('tab-stock').style.color = tab === 'stock' ? '#6366f1' : '#94a3b8';
+    document.getElementById('tab-stock').style.borderBottom = tab === 'stock' ? '2px solid #6366f1' : '2px solid transparent';
+    document.getElementById('tab-trend').style.color = tab === 'trend' ? '#6366f1' : '#94a3b8';
+    document.getElementById('tab-trend').style.borderBottom = tab === 'trend' ? '2px solid #6366f1' : '2px solid transparent';
+    if (tab === 'trend' && !window.trendChartRendered) renderTrendChart();
+  }
+
   var categoryData = JSON.parse('${categoryJson}');
   var trendData = JSON.parse('${trendJson}');
   var colors = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#06b6d4','#ec4899'];
@@ -132,7 +183,10 @@
     });
   }
 
-  if (trendData.length > 0) {
+  window.trendChartRendered = false;
+  function renderTrendChart() {
+    if (trendData.length === 0 || window.trendChartRendered) return;
+    window.trendChartRendered = true;
     var ctx2 = document.getElementById('trendChart').getContext('2d');
     new Chart(ctx2, {
       type: 'line',
@@ -173,7 +227,7 @@
         }
       }
     });
-  }
+  }  // renderTrendChart end
 </script>
 
 </div><!-- main-content -->

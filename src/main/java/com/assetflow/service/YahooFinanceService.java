@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -70,5 +71,9 @@ public class YahooFinanceService {
 
     public void clearCache() {
         cacheMapper.deleteAll();
+    }
+
+    public void clearCacheForSymbols(List<String> symbols) {
+        if (!symbols.isEmpty()) cacheMapper.deleteBySymbols(symbols);
     }
 }

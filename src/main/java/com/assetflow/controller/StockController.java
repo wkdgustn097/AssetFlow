@@ -67,8 +67,9 @@ public class StockController {
     }
 
     @PostMapping("/stocks/refresh")
-    public String refreshPrices(RedirectAttributes redirectAttrs) {
-        stockService.refreshPrices();
+    public String refreshPrices(Authentication auth, RedirectAttributes redirectAttrs) {
+        Long userId = SecurityUtils.getCurrentUserId(auth);
+        stockService.refreshPrices(userId);
         redirectAttrs.addFlashAttribute("success", "가격 캐시가 초기화되었습니다. 새 가격을 조회합니다.");
         return "redirect:/stocks";
     }

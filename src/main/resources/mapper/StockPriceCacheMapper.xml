@@ -22,4 +22,12 @@
         DELETE FROM stock_price_cache
     </delete>
 
+    <delete id="deleteBySymbols">
+        DELETE FROM stock_price_cache
+        WHERE symbol IN
+        <foreach collection="symbols" item="s" open="(" separator="," close=")">
+            #{s}
+        </foreach>
+    </delete>
+
 </mapper>

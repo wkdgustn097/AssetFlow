@@ -46,8 +46,16 @@ public class TransactionController {
                          RedirectAttributes redirectAttrs) {
         Long userId = SecurityUtils.getCurrentUserId(auth);
         try {
-            int count = fileUploadService.processUpload(file, userId);
-            redirectAttrs.addFlashAttribute("success", count + "건의 거래 내역이 등록되었습니다.");
+            FileUploadService.UploadResult result = fileUploadService.processUpload(file, userId);
+            StringBuilder msg = new StringBuilder(result.successCount() + "건의 거래 내역이 등록되었습니다.");
+            if (result.hasFailures()) {
+                msg.append(" (").append(result.failedRows().size()).append("건 실패: ")
+                   .append(String.join(", ", result.failedRows())).append(")");
+                redirectAttrs.addFlashAttribute("error", msg.toString());
+            } else {
+                redirectAttrs.addFlashAttribute("success", msg.toString());
+            }
+            return "redirect:/transactions?yearMonth=" + result.firstYearMonth();
         } catch (FileUploadService.FileParseException e) {
             redirectAttrs.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {

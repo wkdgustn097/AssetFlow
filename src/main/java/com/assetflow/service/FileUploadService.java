@@ -18,10 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -36,18 +33,27 @@ public class FileUploadService {
             DateTimeFormatter.ofPattern("yyyyMMdd")
     );
 
-    public int processUpload(MultipartFile file, Long userId) {
+    public record UploadResult(int successCount, List<String> failedRows, String firstYearMonth) {
+        public boolean hasFailures() { return !failedRows.isEmpty(); }
+    }
+
+    public UploadResult processUpload(MultipartFile file, Long userId) {
         String filename = file.getOriginalFilename();
         if (filename == null) throw new FileParseException("파일 이름을 확인할 수 없습니다.");
 
         String lower = filename.toLowerCase();
         List<Transaction> transactions;
+        List<String> failedRows;
 
         try {
             if (lower.endsWith(".csv")) {
-                transactions = parseCsv(file, userId, filename);
+                var parseResult = parseCsv(file, userId, filename);
+                transactions = parseResult.transactions();
+                failedRows = parseResult.failedRows();
             } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
-                transactions = parseExcel(file, userId, filename);
+                var parseResult = parseExcel(file, userId, filename);
+                transactions = parseResult.transactions();
+                failedRows = parseResult.failedRows();
             } else {
                 throw new FileParseException("지원하지 않는 파일 형식입니다. CSV 또는 Excel 파일을 업로드하세요.");
             }
@@ -55,16 +61,28 @@ public class FileUploadService {
             throw new FileParseException("파일 읽기 오류: " + e.getMessage());
         }
 
-        if (transactions.isEmpty()) {
+        if (transactions.isEmpty() && failedRows.isEmpty()) {
             throw new FileParseException("업로드할 데이터가 없습니다.");
         }
 
-        transactionMapper.insertBatch(transactions);
-        return transactions.size();
+        String firstYearMonth = transactions.stream()
+                .map(t -> t.getTxnDate().format(DateTimeFormatter.ofPattern("yyyy-MM")))
+                .min(Comparator.naturalOrder())
+                .orElse(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM")));
+
+        if (!transactions.isEmpty()) {
+            transactionMapper.insertBatch(transactions);
+        }
+
+        return new UploadResult(transactions.size(), failedRows, firstYearMonth);
     }
 
-    private List<Transaction> parseCsv(MultipartFile file, Long userId, String filename) throws IOException {
+    private record ParseResult(List<Transaction> transactions, List<String> failedRows) {}
+
+    private ParseResult parseCsv(MultipartFile file, Long userId, String filename) throws IOException {
         List<Transaction> result = new ArrayList<>();
+        List<String> failedRows = new ArrayList<>();
+
         try (CSVParser parser = CSVFormat.DEFAULT.builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
@@ -75,23 +93,31 @@ public class FileUploadService {
 
             validateHeaders(parser.getHeaderNames());
 
+            int rowNum = 2;
             for (CSVRecord record : parser) {
-                Transaction t = buildTransaction(
-                        record.get("date"),
-                        record.get("description"),
-                        record.get("category"),
-                        record.get("amount"),
-                        userId,
-                        filename
-                );
-                result.add(t);
+                try {
+                    Transaction t = buildTransaction(
+                            record.get("date"),
+                            record.get("description"),
+                            record.get("category"),
+                            record.get("amount"),
+                            userId,
+                            filename
+                    );
+                    result.add(t);
+                } catch (FileParseException e) {
+                    failedRows.add(rowNum + "행: " + e.getMessage());
+                }
+                rowNum++;
             }
         }
-        return result;
+        return new ParseResult(result, failedRows);
     }
 
-    private List<Transaction> parseExcel(MultipartFile file, Long userId, String filename) throws IOException {
+    private ParseResult parseExcel(MultipartFile file, Long userId, String filename) throws IOException {
         List<Transaction> result = new ArrayList<>();
+        List<String> failedRows = new ArrayList<>();
+
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
@@ -112,10 +138,14 @@ public class FileUploadService {
 
                 if (date.isEmpty() && amount.isEmpty()) continue;
 
-                result.add(buildTransaction(date, description, category, amount, userId, filename));
+                try {
+                    result.add(buildTransaction(date, description, category, amount, userId, filename));
+                } catch (FileParseException e) {
+                    failedRows.add((i + 1) + "행: " + e.getMessage());
+                }
             }
         }
-        return result;
+        return new ParseResult(result, failedRows);
     }
 
     private Transaction buildTransaction(String dateStr, String description, String category,
@@ -140,7 +170,7 @@ public class FileUploadService {
                 return LocalDate.parse(dateStr, fmt);
             } catch (DateTimeParseException ignored) {}
         }
-        throw new FileParseException("날짜 형식을 인식할 수 없습니다: " + dateStr + " (지원: yyyy-MM-dd, yyyy/MM/dd, MM/dd/yyyy, yyyyMMdd)");
+        throw new FileParseException("날짜 형식 오류: " + dateStr);
     }
 
     private BigDecimal parseAmount(String amountStr) {
@@ -148,14 +178,13 @@ public class FileUploadService {
             String cleaned = amountStr.replaceAll("[,\\s₩$]", "");
             return new BigDecimal(cleaned);
         } catch (NumberFormatException e) {
-            throw new FileParseException("금액 형식이 올바르지 않습니다: " + amountStr);
+            throw new FileParseException("금액 형식 오류: " + amountStr);
         }
     }
 
     private void validateHeaders(List<String> headers) {
-        List<String> required = List.of("date", "description", "category", "amount");
         List<String> lower = headers.stream().map(String::toLowerCase).toList();
-        for (String req : required) {
+        for (String req : List.of("date", "description", "category", "amount")) {
             if (!lower.contains(req)) {
                 throw new FileParseException("필수 컬럼 누락: " + req + " (필수: date, description, category, amount)");
             }
@@ -167,9 +196,7 @@ public class FileUploadService {
         DataFormatter formatter = new DataFormatter();
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
             Cell cell = headerRow.getCell(i);
-            if (cell != null) {
-                index.put(formatter.formatCellValue(cell).toLowerCase().trim(), i);
-            }
+            if (cell != null) index.put(formatter.formatCellValue(cell).toLowerCase().trim(), i);
         }
         return index;
     }
@@ -189,8 +216,6 @@ public class FileUploadService {
     }
 
     public static class FileParseException extends RuntimeException {
-        public FileParseException(String message) {
-            super(message);
-        }
+        public FileParseException(String message) { super(message); }
     }
 }

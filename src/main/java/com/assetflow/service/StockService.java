@@ -47,8 +47,11 @@ public class StockService {
         stockMapper.deleteById(id, userId);
     }
 
-    public void refreshPrices() {
-        yahooFinanceService.clearCache();
+    public void refreshPrices(Long userId) {
+        List<String> symbols = stockMapper.findByUserId(userId).stream()
+                .map(Stock::getSymbol)
+                .toList();
+        yahooFinanceService.clearCacheForSymbols(symbols);
     }
 
     public List<Stock> getRawStocks(Long userId) {
